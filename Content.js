@@ -132,6 +132,54 @@ if (isShoppingSite()) {
   console.log("Restored image:", baseImages[currentImageIndex]);
 }
 
+
+// --- Ghost Cloud (full-screen overlay for EMS image) ---
+let activeGhostCloud = null;
+
+function showGhostCloud(index) {
+  const file = baseImages[index];
+  if (!file) return;
+
+  // Remove existing ghost if one is active
+  if (activeGhostCloud) {
+    activeGhostCloud.remove();
+    activeGhostCloud = null;
+  }
+
+  const img = document.createElement("img");
+  img.src = chrome.runtime.getURL(file);
+
+  Object.assign(img.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "100vw",
+    height: "100vh",
+    objectFit: "cover",
+    opacity: "0",
+    zIndex: "9998",
+    pointerEvents: "none", // CLICK THROUGH
+    transition: "opacity 0.8s ease"
+  });
+
+  document.body.appendChild(img);
+  requestAnimationFrame(() => img.style.opacity = "0.8");
+
+  activeGhostCloud = img;
+
+  // Fade out after 5s
+  setTimeout(() => {
+    if (activeGhostCloud) {
+      activeGhostCloud.style.opacity = "0";
+      setTimeout(() => {
+        activeGhostCloud?.remove();
+        activeGhostCloud = null;
+      }, 800);
+    }
+  }, 5000);
+}
+
+
 // --- Click handling ---
 document.addEventListener("click", (e) => {
   if (!isShoppingSite()) return;
@@ -144,16 +192,17 @@ document.addEventListener("click", (e) => {
   const classes = (button.className || "").toLowerCase();
 
   const addKeywords = ["add to cart", "add to bag", "buy now", "purchase", "add", "shop now", "order now", "+"];
-  const removeKeywords = ["remove", "minus", "-"];
+  const removeKeywords = ["remove", "minus"];
 
   const isAdd = addKeywords.some(word => text.includes(word) || aria.includes(word) || classes.includes(word));
   const isRemove = removeKeywords.some(word => text.includes(word) || aria.includes(word) || classes.includes(word));
 
   if (isAdd) {
     currentImageIndex = Math.min(currentImageIndex + 1, baseImages.length - 1);
-    updateDisplayedImage(true);   // show TB image
+    updateDisplayedImage(true);  
+    showGhostCloud(currentImageIndex);
   } else if (isRemove) {
     currentImageIndex = Math.max(currentImageIndex - 1, 0);
-    updateDisplayedImage(false);  // DO NOT show TB image
+    updateDisplayedImage(false);  
   }
 });
