@@ -1,13 +1,25 @@
 function isShoppingSite() {
-  const addButtons = [...document.querySelectorAll("button, a, input")];
-  const hasAddToCart = addButtons.some(b =>
-    /add to cart|add to bag|buy now|checkout|purchase/i.test(
-      b.textContent || b.getAttribute("aria-label") || ""
-    )
+  const bodyText = document.body.innerText.toLowerCase();
+
+  // 1. Detect common shopping keywords anywhere on the page
+  const shoppingKeywords = [
+    "add to cart", "add to bag", "add to basket",
+    "buy now", "checkout", "free shipping", "in stock",
+    "cart", "bag", "basket",
+    "$", "€", "£"
+  ];
+  const keywordHit = shoppingKeywords.some(k => bodyText.includes(k));
+
+  // 2. Detect typical button classes 
+  const buttons = [...document.querySelectorAll("button, a, input")];
+  const classHit = buttons.some(b =>
+    /(add|cart|bag|basket|buy|checkout)/i.test(b.className)
   );
 
-  const urlHit = /\/product|\/cart|\/checkout/.test(location.pathname.toLowerCase());
+  // 3. Detect common ecommerce URL patterns
+  const urlHit = /(product|item|cart|checkout|shop)/.test(location.pathname.toLowerCase());
 
+  // 4. Detect JSON-LD product schema (chatgpt help with this one)
   const hasProductSchema = [...document.querySelectorAll('script[type="application/ld+json"]')]
     .some(tag => {
       try {
@@ -17,8 +29,10 @@ function isShoppingSite() {
       } catch { return false; }
     });
 
-  return hasAddToCart || urlHit || hasProductSchema;
+  // 
+  return keywordHit || classHit || urlHit || hasProductSchema;
 }
+
 
 
 
