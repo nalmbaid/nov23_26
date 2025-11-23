@@ -1,38 +1,25 @@
-const knownDomains = [
-   "hm.com", "zara.com", "uniqlo.com", "gap.com", "oldnavy.com", "oldnavy.gap.com","clubllondon.us",
-  "target.com", "walmart.com", "kohls.com", "macys.com", "jcpenney.com","levi.com",
-  "nordstrom.com", "bloomingdales.com", "urbanoutfitters.com", "forever21.com",
-  "express.com", "jcrew.com", "abercrombie.com", "aeropostale.com", "bananaRepublic.com",
-  "annTaylor.com", "loft.com", "madewell.com", "landsend.com", "eddiebauer.com",
-  "asos.com", "shein.com", "boohoo.com", "prettylittlething.com", "missguided.com",
-  "revolve.com", "lulus.com", "fashionnova.com", "princesspolly.com", "ohpolly.com",
-  "whitefoxboutique.com", "vergegirl.com", "shopbop.com", "ssense.com", "farfetch.com",
-  "yoox.com", "theoutnet.com", "matchesfashion.com", "mytheresa.com", "net-a-porter.com",
-  "renttherunway.com", "nike.com", "adidas.com", "reebok.com", "puma.com", "newbalance.com",
-  "converse.com", "vans.com", "underarmour.com", "asics.com", "champion.com", "fila.com",
-  "footlocker.com", "finishline.com", "eastbay.com", "stockx.com", "goat.com","na-kd.com",
-  "flightclub.com", "stadiumgoods.com", "hoka.com", "on-running.com", "allbirds.com",
-  "lululemon.com", "gymshark.com", "aloYoga.com", "amazon.com", "ebay.com", "etsy.com",
-  "aliexpress.com", "poshmark.com", "thredup.com", "depop.com", "grailed.com",
-  "theRealreal.com", "mercari.com", "zalando.com", "shopify.com", "gucci.com", "prada.com",
-  "dior.com", "chanel.com", "balenciaga.com", "burberry.com", "louisvuitton.com",
-  "saintlaurent.com", "versace.com", "hermes.com", "fendi.com", "celine.com", "valentino.com",
-  "bottegaveneta.com", "moncler.com", "off---white.com", "fearofgod.com", "givenchy.com",
-  "balmain.com", "patagonia.com", "thenorthface.com", "columbia.com", "arcteryx.com",
-  "carhartt.com", "timberland.com", "dockers.com", "levis.com", "wrangler.com",
-  "diesel.com", "superdry.com", "hollisterco.com", "birkenstock.com", "crocs.com", "ugg.com",
-  "drmartens.com", "toms.com", "vionicshoes.com", "skechers.com", "everlane.com", "tentree.com",
-  "outerknown.com", "pact.com", "girlfriend.com", "mate-the-label.com", "reformation.com",
-  "veja-store.com", "rains.com", "bombas.com", "allsbirds.com", "sephora.com", "ulta.com",
-  "glossier.com", "fentybeauty.com", "kyliecosmetics.com", "rarebeauty.com", "patmcgrath.com",
-  "zalora.com", "myntra.com", "ajio.com", "nykaa.com", "asos.co.uk", "boohooman.com",
-  "aboutyou.com", "asos.de", "asos.fr", "asos.com.au","clarks.com","sezane.com","prettylittlething.us","colourpop.com","anthropologie.com","jellycat.com"
-];
-
-
 function isShoppingSite() {
-  return knownDomains.some(domain => location.hostname.includes(domain));
+  const addButtons = [...document.querySelectorAll("button, a, input")];
+  const hasAddToCart = addButtons.some(b =>
+    /add to cart|add to bag|buy now|checkout|purchase/i.test(
+      b.textContent || b.getAttribute("aria-label") || ""
+    )
+  );
+
+  const urlHit = /\/product|\/cart|\/checkout/.test(location.pathname.toLowerCase());
+
+  const hasProductSchema = [...document.querySelectorAll('script[type="application/ld+json"]')]
+    .some(tag => {
+      try {
+        const data = JSON.parse(tag.textContent);
+        return data["@type"] === "Product" ||
+               (Array.isArray(data) && data.some(d => d["@type"] === "Product"));
+      } catch { return false; }
+    });
+
+  return hasAddToCart || urlHit || hasProductSchema;
 }
+
 
 
 // --- Image sets ---
@@ -74,7 +61,7 @@ function createPopupImage(filename, options = {}) {
 }
 
 // --- Show main image ---
-function updateDisplayedImage() {
+function updateDisplayedImage(showTB = true) {
   const chosenImage = baseImages[currentImageIndex];
 
   if (!activeImageElement) {
@@ -85,7 +72,11 @@ function updateDisplayedImage() {
   }
 
   localStorage.setItem("currentImageIndex", currentImageIndex);
-  showTemporaryTBImage(currentImageIndex);
+
+  // Only show temporary TB if requested
+  if (showTB) {
+    showTemporaryTBImage(currentImageIndex);
+  }
 }
 
 // --- Show temporary TB overlay ---
@@ -98,17 +89,15 @@ function showTemporaryTBImage(index) {
     activeTBImage = null;
   }
 
-  // proportional ratio: (1792 / 454)
-   // chatgpt helped with ratio concept
-  const ratio = 1792 / 454; // ≈ 3.948
-  const tbWidth = 100 * ratio; // proportional to base image width
+  const ratio = 1792 / 454;
+  const tbWidth = 100 * ratio;
+
   activeTBImage = createPopupImage(tbFile, {
     width: tbWidth + "px",
     zIndex: "10000",
     opacity: 0.9
   });
 
-  // Fade out after 5 seconds
   setTimeout(() => {
     if (activeTBImage) {
       activeTBImage.style.opacity = "0";
@@ -140,7 +129,6 @@ document.addEventListener("click", (e) => {
   const aria = (button.getAttribute("aria-label") || "").toLowerCase();
   const classes = (button.className || "").toLowerCase();
 
-   // chatgpt helped with aria labeling options
   const addKeywords = ["add to cart", "add to bag", "buy now", "purchase", "add", "shop now", "order now", "+"];
   const removeKeywords = ["remove", "minus", "-"];
 
@@ -149,9 +137,9 @@ document.addEventListener("click", (e) => {
 
   if (isAdd) {
     currentImageIndex = Math.min(currentImageIndex + 1, baseImages.length - 1);
-    updateDisplayedImage();
+    updateDisplayedImage(true);   // show TB image
   } else if (isRemove) {
     currentImageIndex = Math.max(currentImageIndex - 1, 0);
-    updateDisplayedImage();
+    updateDisplayedImage(false);  // DO NOT show TB image
   }
 });
