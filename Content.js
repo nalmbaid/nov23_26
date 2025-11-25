@@ -5,8 +5,7 @@ function isShoppingSite() {
   const shoppingKeywords = [
     "add to cart", "add to bag", "add to basket",
     "buy now", "checkout", "free shipping", "in stock",
-    "cart", "bag", "basket",
-    "$", "€", "£"
+    "cart", "bag", "basket"
   ];
   const keywordHit = shoppingKeywords.some(k => bodyText.includes(k));
 
